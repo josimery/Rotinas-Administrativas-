@@ -1,0 +1,92 @@
+{
+  "rules": {
+    ".read": "auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR'",
+    ".write": "auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR'",
+    "workspace": {
+      "state": {
+        "services": {
+          ".read": "auth != null && root.child('members').child(auth.uid).child('active').val() === true"
+        },
+        "demands": {
+          "$id": {
+            ".write": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && !data.exists() && newData.exists()",
+            ".validate": "(auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR') || (newData.hasChildren(['id','title','service','status','owner','protocol','due','priority','notes','createdBy','createdAt']) && newData.child('id').val() === $id && newData.child('createdBy').val() === auth.uid && newData.child('status').val() === 'Recebida')",
+            "title": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
+            },
+            "service": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "status": {
+              ".validate": "newData.val() === 'Recebida' || newData.val() === 'Em andamento' || newData.val() === 'Aguardando retorno' || newData.val() === 'Concluída'"
+            },
+            "owner": {
+              ".validate": "newData.isString() && newData.val().length <= 100"
+            },
+            "protocol": {
+              ".validate": "newData.isString() && newData.val().length <= 100"
+            },
+            "due": {
+              ".validate": "newData.isString() && newData.val().length <= 10"
+            },
+            "priority": {
+              ".validate": "newData.val() === 'Normal' || newData.val() === 'Alta' || newData.val() === 'Urgente'"
+            },
+            "notes": {
+              ".validate": "newData.isString() && newData.val().length <= 10000"
+            },
+            "files": {
+              ".validate": "newData.numChildren() <= 5",
+              "$index": {
+                ".validate": "newData.hasChildren(['name','size','type','data'])",
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 255"
+                },
+                "size": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2097152"
+                },
+                "type": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "data": {
+                  ".validate": "newData.isString() && newData.val().length <= 2796204"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "id": {
+              ".validate": "newData.isString() && newData.val() === $id"
+            },
+            "createdBy": {
+              ".validate": "newData.isString()"
+            },
+            "createdName": {
+              ".validate": "newData.isString() && newData.val().length <= 100"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "updatedAt": {
+              ".validate": "newData.isString() && newData.val().length <= 50"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "members": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "audit": {
+      ".indexOn": [
+        "created_at"
+      ]
+    }
+  }
+}
