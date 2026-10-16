@@ -19,7 +19,7 @@ const snapState=raw=>{const s=raw?.state;if(!s)return defaults();return {...s,..
 function toDatabaseState(state){const demands={};for(const d of state.demands)demands[d.id]=d;const {customFields,...rest}=state;return {...rest,services:customFields?.length?{...state.services,_customFields:customFields}:state.services,demands}}
 async function profile(){const m=await ready(),u=auth.currentUser;if(!u)return null;if(u.uid===adminUid)return {id:u.uid,name:u.displayName||'Josi',role:'admin'};const s=await m.storage.get(m.storage.ref(database,'members/'+u.uid));const p=s.val();if(!p?.active){await m.identity.signOut(auth);throw Error('Seu acesso ainda não foi autorizado pela administradora.')}return {id:u.uid,name:p.name,role:'member'}}
 function needAdmin(){if(!auth.currentUser||auth.currentUser.uid!==adminUid)throw Error('Apenas a administradora pode realizar esta ação.')}
-export async function watchChanges(callback){const m=await ready();needAdmin();if(stopWatch)stopWatch();watchCallback=callback;stopWatch=m.storage.onValue(m.storage.ref(database,'workspace'),()=>watchCallback?.(),error=>callback(error));}
+export async function watchChanges(callback){const m=await ready(),p=await profile();if(!p)throw Error('Entre para acompanhar suas demandas.');if(stopWatch)stopWatch();watchCallback=callback;const target=p.role==='admin'?m.storage.ref(database,'workspace'):m.storage.query(m.storage.ref(database,'workspace/state/demands'),m.storage.orderByChild('createdBy'),m.storage.equalTo(p.id));stopWatch=m.storage.onValue(target,()=>watchCallback?.(),error=>callback(error));}
 export function stopWatching(){stopWatch?.();stopWatch=null;watchCallback=null}
 export async function api(path,options={}){
  const m=await ready(),{storage:s,identity:i}=m;const method=options.method||'GET',data=options.body?JSON.parse(options.body):{};
@@ -32,11 +32,24 @@ export async function api(path,options={}){
  if(path==='/api/catalog'){const r=await s.get(ref('workspace/state/services'));return catalogFrom(r.val()||defaults().services)}
  if(path==='/api/revision'){needAdmin();const r=await s.get(ref('workspace/revision'));return {revision:r.val()||0}}
  if(path==='/api/state'&&method==='GET'){
+  if(auth.currentUser.uid!==adminUid){const p=await profile();const [catalog,demands]=await Promise.all([s.get(ref('workspace/state/services')),s.get(s.query(ref('workspace/state/demands'),s.orderByChild('createdBy'),s.equalTo(p.id)))]);baseWorkspace={revision:0,state:{...defaults(),services:catalog.val()||defaults().services,demands:demands.val()||{}}};return {revision:0,state:snapState(baseWorkspace)}}
   needAdmin();let r=await s.get(ref('workspace'));
   if(!r.exists()){await s.runTransaction(ref('workspace'),current=>current||{revision:0,state:toDatabaseState(defaults())},{applyLocally:false});r=await s.get(ref('workspace'))}
   baseWorkspace=r.val();return {revision:baseWorkspace.revision||0,state:snapState(baseWorkspace)};
  }
  if(path==='/api/state'&&method==='POST'){
+  if(auth.currentUser.uid!==adminUid){
+   const p=await profile();if(!baseWorkspace)throw Error('Atualize o aplicativo antes de salvar.');
+   const before=toDatabaseState(snapState(baseWorkspace)).demands,next=toDatabaseState(data.state).demands;
+   if(Object.keys(before).some(id=>!next[id]))throw Error('Somente a administradora pode excluir demandas.');
+   const changes=Object.entries(next).filter(([id,d])=>JSON.stringify(d)!==JSON.stringify(before[id]));
+   if(changes.length!==1)throw Error('Salve uma demanda por vez.');
+   const [id,d]=changes[0],previous=baseWorkspace.state.demands[id];
+   if(d.createdBy!==p.id||(previous&&previous.createdBy!==p.id))throw Error('Você pode alterar somente as demandas que criou.');
+   if(previous){const transaction=await s.runTransaction(ref('workspace/state/demands/'+id),current=>JSON.stringify(current??null)===JSON.stringify(previous)?d:undefined,{applyLocally:false});if(!transaction.committed)throw Error('Esta demanda foi atualizada. Feche a edição e atualize antes de tentar novamente.');baseWorkspace.state.demands[id]=transaction.snapshot.val()}
+   else{await s.set(ref('workspace/state/demands/'+id),{...d,createdBy:p.id,createdName:p.name});baseWorkspace.state.demands[id]={...d,createdBy:p.id,createdName:p.name}}
+   return {revision:0};
+  }
   needAdmin();const expected=JSON.stringify(baseWorkspace??null);
   const transaction=await s.runTransaction(ref('workspace'),current=>{
    if(JSON.stringify(current??null)!==expected)return;
