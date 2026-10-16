@@ -9,8 +9,8 @@
         },
         "demands": {
           "$id": {
-            ".write": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && !data.exists() && newData.exists()",
-            ".validate": "(auth != null && auth.uid === 'epwllXAb5ue1icxld8e9rINjkTJ2') || (newData.hasChildren(['id','title','service','status','owner','protocol','due','priority','notes','createdBy','createdAt']) && newData.child('id').val() === $id && newData.child('createdBy').val() === auth.uid && newData.child('status').val() === 'Recebida')",
+            ".write": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && newData.exists() && (!data.exists() || data.child('createdBy').val() === auth.uid)",
+            ".validate": "(auth != null && auth.uid === 'epwllXAb5ue1icxld8e9rINjkTJ2') || (newData.hasChildren(['id','title','service','status','owner','protocol','due','priority','notes','createdBy','createdName','createdAt']) && newData.child('id').val() === $id && newData.child('createdBy').val() === auth.uid && ((!data.exists() && newData.child('createdName').val() === root.child('members').child(auth.uid).child('name').val()) || (data.exists() && newData.child('createdName').val() === data.child('createdName').val() && newData.child('createdAt').val() === data.child('createdAt').val())))",
             "title": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
             },
@@ -73,8 +73,13 @@
             },
             "$other": {
               ".validate": false
-            }
-          }
+            },
+            ".read": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && data.child('createdBy').val() === auth.uid"
+          },
+          ".indexOn": [
+            "createdBy"
+          ],
+          ".read": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && query.orderByChild === 'createdBy' && query.equalTo === auth.uid"
         }
       }
     },
