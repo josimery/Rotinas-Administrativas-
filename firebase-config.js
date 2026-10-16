@@ -8,5 +8,5 @@ export const firebaseConfig = {
   messagingSenderId: "860703060627",
   appId: "1:860703060627:web:e241f359d1565bac035366"
 };
-// Pendente: endereço do Realtime Database e UID da administradora.
-export const adminUid = '';
+// UID da administradora; as permissões são aplicadas pelas regras do banco.
+export const adminUid = 'epwllXAb5ue1icxld8e9rINjkTJ2';
