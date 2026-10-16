@@ -1,7 +1,7 @@
 {
   "rules": {
-    ".read": "auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR'",
-    ".write": "auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR'",
+    ".read": "auth != null && auth.uid === 'epwllXAb5ue1icxld8e9rINjkTJ2'",
+    ".write": "auth != null && auth.uid === 'epwllXAb5ue1icxld8e9rINjkTJ2'",
     "workspace": {
       "state": {
         "services": {
@@ -10,7 +10,7 @@
         "demands": {
           "$id": {
             ".write": "auth != null && root.child('members').child(auth.uid).child('active').val() === true && !data.exists() && newData.exists()",
-            ".validate": "(auth != null && auth.uid === 'ADMIN_UID_CONFIGURAR') || (newData.hasChildren(['id','title','service','status','owner','protocol','due','priority','notes','createdBy','createdAt']) && newData.child('id').val() === $id && newData.child('createdBy').val() === auth.uid && newData.child('status').val() === 'Recebida')",
+            ".validate": "(auth != null && auth.uid === 'epwllXAb5ue1icxld8e9rINjkTJ2') || (newData.hasChildren(['id','title','service','status','owner','protocol','due','priority','notes','createdBy','createdAt']) && newData.child('id').val() === $id && newData.child('createdBy').val() === auth.uid && newData.child('status').val() === 'Recebida')",
             "title": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
             },
