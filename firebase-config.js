@@ -2,6 +2,7 @@
 export const firebaseConfig = {
   apiKey: "AIzaSyAro5rO-Hif9iIS3CZYEhwwo1p-BO_iFrw",
   authDomain: "rotinas-administrativas-josi.firebaseapp.com",
+  databaseURL: "https://rotinas-administrativas-josi-default-rtdb.firebaseio.com",
   projectId: "rotinas-administrativas-josi",
   storageBucket: "rotinas-administrativas-josi.firebasestorage.app",
   messagingSenderId: "860703060627",
