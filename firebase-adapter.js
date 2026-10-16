@@ -14,8 +14,9 @@ async function ready(){
  if(!app){app=m.apps.initializeApp(firebaseConfig);auth=m.identity.getAuth(app);database=m.storage.getDatabase(app);await m.identity.setPersistence(auth,m.identity.browserSessionPersistence)}
  await auth.authStateReady();return m;
 }
-const snapState=raw=>{const s=raw?.state;if(!s)return defaults();return {...s,demands:Object.values(s.demands||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(d=>({...d,files:d.files||[]}))}};
-function toDatabaseState(state){const demands={};for(const d of state.demands)demands[d.id]=d;return {...state,demands}}
+function catalogFrom(raw){return {services:Array.isArray(raw)?raw:Object.keys(raw||{}).filter(k=>/^\d+$/.test(k)).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]),customFields:Array.isArray(raw?._customFields)?raw._customFields:Object.values(raw?._customFields||{})}}
+const snapState=raw=>{const s=raw?.state;if(!s)return defaults();return {...s,...catalogFrom(s.services),demands:Object.values(s.demands||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(d=>({...d,files:d.files||[]}))}};
+function toDatabaseState(state){const demands={};for(const d of state.demands)demands[d.id]=d;const {customFields,...rest}=state;return {...rest,services:customFields?.length?{...state.services,_customFields:customFields}:state.services,demands}}
 async function profile(){const m=await ready(),u=auth.currentUser;if(!u)return null;if(u.uid===adminUid)return {id:u.uid,name:u.displayName||'Josi',role:'admin'};const s=await m.storage.get(m.storage.ref(database,'members/'+u.uid));const p=s.val();if(!p?.active){await m.identity.signOut(auth);throw Error('Seu acesso ainda não foi autorizado pela administradora.')}return {id:u.uid,name:p.name,role:'member'}}
 function needAdmin(){if(!auth.currentUser||auth.currentUser.uid!==adminUid)throw Error('Apenas a administradora pode realizar esta ação.')}
 export async function watchChanges(callback){const m=await ready();needAdmin();if(stopWatch)stopWatch();watchCallback=callback;stopWatch=m.storage.onValue(m.storage.ref(database,'workspace'),()=>watchCallback?.(),error=>callback(error));}
@@ -28,7 +29,7 @@ export async function api(path,options={}){
  if(path==='/api/login'){await i.signInWithEmailAndPassword(auth,data.login.trim(),data.password);const p=await profile();if(!p)throw Error('Acesso não autorizado.');return {ok:true}}
  if(path==='/api/logout'){stopWatching();await i.signOut(auth);baseWorkspace=undefined;return {ok:true}}
  if(!auth.currentUser)throw Error('Entre com seu e-mail e senha.');
- if(path==='/api/catalog'){const r=await s.get(ref('workspace/state/services'));return {services:r.val()||defaults().services}}
+ if(path==='/api/catalog'){const r=await s.get(ref('workspace/state/services'));return catalogFrom(r.val()||defaults().services)}
  if(path==='/api/revision'){needAdmin();const r=await s.get(ref('workspace/revision'));return {revision:r.val()||0}}
  if(path==='/api/state'&&method==='GET'){
   needAdmin();let r=await s.get(ref('workspace'));
