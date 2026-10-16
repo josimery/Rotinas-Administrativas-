@@ -36,9 +36,9 @@
               ".validate": "newData.isString() && newData.val().length <= 10000"
             },
             "files": {
-              ".validate": "newData.numChildren() <= 5",
+              ".validate": "newData.hasChildren()",
               "$index": {
-                ".validate": "newData.hasChildren(['name','size','type','data'])",
+                ".validate": "($index === '0' || $index === '1' || $index === '2' || $index === '3' || $index === '4') && newData.hasChildren(['name','size','type','data'])",
                 "name": {
                   ".validate": "newData.isString() && newData.val().length <= 255"
                 },
